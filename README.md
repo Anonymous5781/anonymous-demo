@@ -4,12 +4,12 @@ Static supplementary-material viewer for resume review. The teaser image is stor
 
 ## Video
 
-The demo video uses the COS URL first and falls back to the GitHub Release asset:
+The demo video uses the GitHub Release asset first and falls back to the COS URL:
 
 ```js
 const VIDEO_SOURCES = [
-  'https://demo-1323834993.cos.ap-guangzhou.myqcloud.com/Demo.mp4',
-  'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4'
+  'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4',
+  'https://demo-1323834993.cos.ap-guangzhou.myqcloud.com/Demo.mp4'
 ];
 ```
 

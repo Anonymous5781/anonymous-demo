@@ -102,7 +102,7 @@
     .teaser-wrap img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
     .teaser-caption { margin: 0; padding: 8px 10px 9px; border-top: 1px solid var(--line); color: #344054; font-size: 12px; line-height: 1.45; background: #fbfcff; }
     .teaser-caption strong { color: var(--text); font-weight: 800; }
-    .video-wrap { background: #0b1020; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+    .video-wrap { position: relative; background: #0b1020; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
     .video-wrap video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0b1020; }
     @media (max-width: 900px) {
       .topbar { align-items: flex-start; flex-direction: column; }
@@ -140,7 +140,6 @@
       <section class="video-panel">
         <div class="panel-head">
           <h2>Project Demo Video</h2>
-          <span class="badge">streaming preview</span>
         </div>
         <div class="video-wrap">
           <video id="demoVideo" controls preload="metadata" playsinline webkit-playsinline></video>
@@ -179,8 +178,8 @@
 
   <script>
     const VIDEO_SOURCES = [
-      'https://demo-1323834993.cos.ap-guangzhou.myqcloud.com/Demo.mp4',
-      'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4'
+      'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4',
+      'https://demo-1323834993.cos.ap-guangzhou.myqcloud.com/Demo.mp4'
     ];
     const DATA = {
       "case0": {
@@ -239,13 +238,28 @@
     const inputBadge = document.getElementById('inputBadge');
     const panoViewer = document.getElementById('panoViewer');
     const demoVideo = document.getElementById('demoVideo');
-    const speedList = document.getElementById('speedList');
     const videoError = document.getElementById('videoError');
-    const SPEEDS = [0.5, 1, 1.5, 2];
     let videoSourceIndex = 0;
 
+    function loadVideoSource(index) {
+      videoSourceIndex = index;
+      videoError.classList.remove('show');
+      videoError.textContent = '';
+      demoVideo.src = VIDEO_SOURCES[index];
+      demoVideo.load();
+    }
+
     function setupVideo() {
-      demoVideo.src = VIDEO_SOURCE;
+      renderSpeedButtons();
+      demoVideo.addEventListener('error', () => {
+        if (videoSourceIndex + 1 < VIDEO_SOURCES.length) {
+          loadVideoSource(videoSourceIndex + 1);
+          return;
+        }
+        videoError.textContent = '视频暂时无法加载，请检查网络或稍后重试。';
+        videoError.classList.add('show');
+      });
+      loadVideoSource(0);
     }
 
     function sortedCases() {
