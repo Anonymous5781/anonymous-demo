@@ -1,6 +1,6 @@
 ﻿# Anonymous Demo
 
-Static supplementary-material viewer for resume review. Images are embedded in `Results_Viewer.html`; the teaser image is stored as `image.png`.
+Static supplementary-material viewer for resume review. The teaser image is stored as `image.png`; result panoramas are stored under `cases/` and loaded on demand by the viewer.
 
 ## Video
 
