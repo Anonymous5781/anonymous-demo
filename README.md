@@ -4,7 +4,7 @@ Static supplementary-material viewer for resume review. The teaser image is stor
 
 ## Video
 
-The demo video uses the GitHub Release asset first and falls back to the COS URL:
+The demo video uses the GitHub Release asset by default. The page also includes a manual COS backup source button:
 
 ```js
 const VIDEO_SOURCES = [
@@ -17,4 +17,4 @@ const VIDEO_SOURCES = [
 
 ## Local preview
 
-Open `index.html` or `Results_Viewer.html` in a browser. The same page works on GitHub Pages after the Release asset is available.
+Open `index.html` in a browser. The same page works on GitHub Pages after the Release asset is available.

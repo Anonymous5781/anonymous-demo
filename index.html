@@ -69,6 +69,12 @@
     }
     button:hover { border-color: #9aa8c4; }
     button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .source-toggle {
+      height: 28px;
+      padding: 0 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
     .viewer-wrap { position: relative; background: #101827; flex: 1; min-height: 0; }
     #panoViewer { width: 100%; height: 100%; min-height: 0; background: #101827; }
     #panoViewer .pnlm-container { background: #101827; }
@@ -104,6 +110,20 @@
     .teaser-caption strong { color: var(--text); font-weight: 800; }
     .video-wrap { position: relative; background: #0b1020; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
     .video-wrap video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0b1020; }
+    .video-error {
+      display: none;
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: rgba(11, 16, 32, 0.86);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .video-error.show { display: block; }
     @media (max-width: 900px) {
       .topbar { align-items: flex-start; flex-direction: column; }
       .layout { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; min-height: auto; }
@@ -120,8 +140,8 @@
   <header>
     <div class="topbar">
       <div>
-        <h1>Internship Portfolio Supplementary Demo</h1>
-        <div class="subtitle">Supplementary visual materials for resume review. Select a case, edition, and viewpoint to inspect the embedded results.</div>
+        <h1>Supplementary Demo</h1>
+        <div class="subtitle">Supplementary visual materials . Select a case, edition, and viewpoint to inspect the embedded results.</div>
       </div>
     </div>
   </header>
@@ -140,6 +160,7 @@
       <section class="video-panel">
         <div class="panel-head">
           <h2>Project Demo Video</h2>
+          <button id="videoSourceToggle" class="source-toggle" type="button">备用源</button>
         </div>
         <div class="video-wrap">
           <video id="demoVideo" controls preload="metadata" playsinline webkit-playsinline></video>
@@ -239,7 +260,12 @@
     const panoViewer = document.getElementById('panoViewer');
     const demoVideo = document.getElementById('demoVideo');
     const videoError = document.getElementById('videoError');
+    const videoSourceToggle = document.getElementById('videoSourceToggle');
     let videoSourceIndex = 0;
+
+    function videoSourceButtonText(index) {
+      return index === 0 ? '备用源' : 'GitHub源';
+    }
 
     function loadVideoSource(index) {
       videoSourceIndex = index;
@@ -247,16 +273,18 @@
       videoError.textContent = '';
       demoVideo.src = VIDEO_SOURCES[index];
       demoVideo.load();
+      videoSourceToggle.textContent = videoSourceButtonText(index);
+      videoSourceToggle.title = index === 0 ? '切换到 COS 备用源' : '切回 GitHub 主源';
     }
 
     function setupVideo() {
-      renderSpeedButtons();
+      videoSourceToggle.addEventListener('click', () => {
+        loadVideoSource(videoSourceIndex === 0 ? 1 : 0);
+      });
       demoVideo.addEventListener('error', () => {
-        if (videoSourceIndex + 1 < VIDEO_SOURCES.length) {
-          loadVideoSource(videoSourceIndex + 1);
-          return;
-        }
-        videoError.textContent = '视频暂时无法加载，请检查网络或稍后重试。';
+        videoError.textContent = videoSourceIndex === 0
+          ? 'GitHub 视频源暂时无法加载，可点击右上角备用源。'
+          : '备用视频源暂时无法加载，可点击右上角切回 GitHub 源。';
         videoError.classList.add('show');
       });
       loadVideoSource(0);
