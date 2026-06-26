@@ -134,7 +134,7 @@
         <div class="teaser-wrap">
           <img src="image.png" alt="Project teaser overview" loading="eager" />
         </div>
-        <p class="teaser-caption"></strong>单张全景图场景编辑与自由视点全景生成。直接对单张 ERP 图像 (a) 的点图进行网格化 (b) 只能捕获可见表面，会留下未观测背景区域和前景遮挡侧面的缺失。我们的方法补全房间结构，重建解耦的前景资产，并将其组装为可交互的 3D 场景 (c)，用于可编辑的全景生成 (d)。</p>
+        <p class="teaser-caption">单张全景图场景编辑与自由视点全景生成。直接对单张 ERP 图像 (a) 的点图进行网格化 (b) 只能捕获可见表面，会留下未观测背景区域和前景遮挡侧面的缺失。我们的方法补全房间结构，重建解耦的前景资产，并将其组装为可交互的 3D 场景 (c)，用于可编辑的全景生成 (d)。</p>
       </section>
 
       <section class="video-panel">
@@ -143,7 +143,8 @@
           <span class="badge">streaming preview</span>
         </div>
         <div class="video-wrap">
-          <video id="demoVideo" controls preload="metadata" playsinline></video>
+          <video id="demoVideo" controls preload="metadata" playsinline webkit-playsinline></video>
+          <div id="videoError" class="video-error"></div>
         </div>
       </section>
 
@@ -177,7 +178,10 @@
   </main>
 
   <script>
-    const VIDEO_SOURCE = 'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4';
+    const VIDEO_SOURCES = [
+      'https://demo-1323834993.cos.ap-guangzhou.myqcloud.com/Demo.mp4',
+      'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4'
+    ];
     const DATA = {
       "case0": {
             "V0": [
@@ -235,6 +239,10 @@
     const inputBadge = document.getElementById('inputBadge');
     const panoViewer = document.getElementById('panoViewer');
     const demoVideo = document.getElementById('demoVideo');
+    const speedList = document.getElementById('speedList');
+    const videoError = document.getElementById('videoError');
+    const SPEEDS = [0.5, 1, 1.5, 2];
+    let videoSourceIndex = 0;
 
     function setupVideo() {
       demoVideo.src = VIDEO_SOURCE;
