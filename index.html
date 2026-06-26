@@ -1,12 +1,372 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="refresh" content="0; url=Results_Viewer.html" />
   <title>一种基于单张全景图的可编辑自由视点全景生成系统 Supplementary Demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --line: #d8deea;
+      --accent: #2563eb;
+      --accent-soft: #e8efff;
+      --input: #0f766e;
+      --shadow: 0 12px 30px rgba(20, 28, 45, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(246, 247, 251, 0.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 12px 16px 10px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    h1 { margin: 0; font-size: 20px; line-height: 1.12; letter-spacing: 0; }
+    .subtitle { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    main { width: 100%; max-width: none; margin: 0; padding: 10px 12px 12px; }
+    .layout { display: grid; grid-template-columns: minmax(360px, 42vw) minmax(0, 1fr); grid-template-rows: minmax(180px, 36%) minmax(0, 1fr); gap: 10px; align-items: stretch; height: calc(100vh - 86px); min-height: 0; }
+    .viewer-panel, .video-panel, .teaser-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
+    .teaser-panel { grid-column: 1; grid-row: 1; }
+    .video-panel { grid-column: 1; grid-row: 2; }
+    .viewer-panel { grid-column: 2; grid-row: 1 / span 2; }
+    .panel-head { padding: 9px 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel-head h2 { margin: 0; font-size: 13px; }
+    .control-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: #fbfcff; }
+    .control-group { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .control-label { color: var(--muted); font-size: 12px; font-weight: 750; white-space: nowrap; }
+    .case-list, .edition-list, .view-switch { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 7px 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover { border-color: #9aa8c4; }
+    button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .viewer-wrap { position: relative; background: #101827; flex: 1; min-height: 0; }
+    #panoViewer { width: 100%; height: 100%; min-height: 0; background: #101827; }
+    #panoViewer .pnlm-container { background: #101827; }
+    #panoViewer .pnlm-load-button, #panoViewer .pnlm-load-box { display: none !important; }
+    .view-switch button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .badge.input { background: #e7f8f4; color: var(--input); }
+    .fallback { width: 100%; height: 100%; object-fit: contain; background: #fff; display: block; }
+    .teaser-wrap { background: #fff; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .teaser-wrap img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+    .teaser-caption { margin: 0; padding: 8px 10px 9px; border-top: 1px solid var(--line); color: #344054; font-size: 12px; line-height: 1.45; background: #fbfcff; }
+    .teaser-caption strong { color: var(--text); font-weight: 800; }
+    .video-wrap { background: #0b1020; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+    .video-wrap video { display: block; width: 100%; height: 100%; object-fit: contain; background: #0b1020; }
+    @media (max-width: 900px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .layout { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; min-height: auto; }
+      .teaser-panel, .video-panel, .viewer-panel { grid-column: 1; grid-row: auto; }
+      .teaser-panel { min-height: 34vh; }
+      .viewer-panel { min-height: 68vh; }
+      .video-panel { min-height: 48vh; }
+      .control-group { width: 100%; align-items: flex-start; flex-direction: column; }
+      #panoViewer { min-height: 360px; }
+    }
+  </style>
 </head>
 <body>
-  <p><a href="Results_Viewer.html">Open the demo</a></p>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>Internship Portfolio Supplementary Demo</h1>
+        <div class="subtitle">Supplementary visual materials for resume review. Select a case, edition, and viewpoint to inspect the embedded results.</div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="layout">
+      <section class="teaser-panel">
+        <div class="panel-head">
+          <h2>Project Overview</h2>
+        </div>
+        <div class="teaser-wrap">
+          <img src="image.png" alt="Project teaser overview" loading="eager" />
+        </div>
+        <p class="teaser-caption"></strong>单张全景图场景编辑与自由视点全景生成。直接对单张 ERP 图像 (a) 的点图进行网格化 (b) 只能捕获可见表面，会留下未观测背景区域和前景遮挡侧面的缺失。我们的方法补全房间结构，重建解耦的前景资产，并将其组装为可交互的 3D 场景 (c)，用于可编辑的全景生成 (d)。</p>
+      </section>
+
+      <section class="video-panel">
+        <div class="panel-head">
+          <h2>Project Demo Video</h2>
+          <span class="badge">streaming preview</span>
+        </div>
+        <div class="video-wrap">
+          <video id="demoVideo" controls preload="metadata" playsinline></video>
+        </div>
+      </section>
+
+      <section class="viewer-panel">
+        <div class="panel-head">
+          <h2 id="caseTitle">Case</h2>
+        </div>
+        <div class="control-bar" aria-label="Result selectors">
+          <div class="control-group">
+            <span class="control-label">Cases</span>
+            <div id="caseList" class="case-list" aria-label="Case selector"></div>
+          </div>
+          <div class="control-group">
+            <span class="control-label">Viewpoints</span>
+            <div id="viewSwitch" class="view-switch" aria-label="Viewpoint selector"></div>
+          </div>
+          <div class="control-group">
+            <span class="control-label">Editions</span>
+            <div id="editionTabs" class="edition-list" aria-label="Edition selector"></div>
+          </div>
+        </div>
+        <div class="viewer-wrap">
+          <div id="panoViewer" aria-label="Pannellum panorama preview"></div>
+        </div>
+        <div class="status">
+          <span id="selectionLabel"></span>
+          <span id="inputBadge" class="badge input">input</span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const VIDEO_SOURCE = 'https://github.com/Anonymous5781/anonymous-demo/releases/download/v1.0.0/Demo.mp4';
+    const DATA = {
+      "case0": {
+            "V0": [
+                  "e0",
+                  "e1",
+                  "e2"
+            ],
+            "V1": [
+                  "e0",
+                  "e1",
+                  "e2"
+            ]
+      },
+      "case1": {
+            "V0": [
+                  "e0",
+                  "e1",
+                  "e2"
+            ],
+            "V1": [
+                  "e0",
+                  "e1",
+                  "e2"
+            ]
+      },
+      "case2": {
+            "V0": [
+                  "e0",
+                  "e1"
+            ],
+            "V1": [
+                  "e0",
+                  "e1"
+            ]
+      },
+      "case3": {
+            "V0": [
+                  "e0",
+                  "e1"
+            ],
+            "V1": [
+                  "e0",
+                  "e1"
+            ]
+      }
+};
+    const state = { caseId: Object.keys(DATA)[0], viewId: 'V0', editId: 'e0' };
+    let pano = null;
+
+    const caseList = document.getElementById('caseList');
+    const editionTabs = document.getElementById('editionTabs');
+    const viewSwitch = document.getElementById('viewSwitch');
+    const caseTitle = document.getElementById('caseTitle');
+    const selectionLabel = document.getElementById('selectionLabel');
+    const inputBadge = document.getElementById('inputBadge');
+    const panoViewer = document.getElementById('panoViewer');
+    const demoVideo = document.getElementById('demoVideo');
+
+    function setupVideo() {
+      demoVideo.src = VIDEO_SOURCE;
+    }
+
+    function sortedCases() {
+      return Object.keys(DATA).sort((a, b) => Number(a.replace('case', '')) - Number(b.replace('case', '')));
+    }
+
+    function sortedEdits(caseId) {
+      const edits = new Set();
+      Object.values(DATA[caseId]).forEach((items) => items.forEach((edit) => edits.add(edit)));
+      return [...edits].sort((a, b) => Number(a.replace('e', '')) - Number(b.replace('e', '')));
+    }
+
+    function sortedViews(caseId) {
+      return Object.keys(DATA[caseId]).sort();
+    }
+
+    function imagePath(caseId, viewId, editId) {
+      const path = `cases/${caseId}/${viewId}/${editId}.png`;
+      return path;
+    }
+
+    function available(caseId, viewId, editId) {
+      return Boolean(DATA[caseId] && DATA[caseId][viewId] && DATA[caseId][viewId].includes(editId));
+    }
+
+    function normalizeSelection() {
+      const views = sortedViews(state.caseId);
+      if (!views.includes(state.viewId)) state.viewId = views[0];
+      const edits = sortedEdits(state.caseId);
+      if (!edits.includes(state.editId)) state.editId = edits[0];
+      if (!available(state.caseId, state.viewId, state.editId)) {
+        const fallback = DATA[state.caseId][state.viewId]?.[0] || edits[0];
+        state.editId = fallback;
+      }
+    }
+
+    function labelEdition(editId) {
+      const n = Number(editId.replace('e', ''));
+      return Number.isFinite(n) ? `Edition ${n}` : editId;
+    }
+
+    function isInput() {
+      return state.viewId === 'V0' && state.editId === 'e0';
+    }
+
+    function renderCases() {
+      caseList.innerHTML = '';
+      sortedCases().forEach((caseId) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = caseId.replace('case', 'Case ');
+        btn.className = caseId === state.caseId ? 'active' : '';
+        btn.addEventListener('click', () => {
+          state.caseId = caseId;
+          state.viewId = 'V0';
+          state.editId = 'e0';
+          render();
+        });
+        caseList.appendChild(btn);
+      });
+    }
+
+    function renderEditions() {
+      editionTabs.innerHTML = '';
+      sortedEdits(state.caseId).forEach((editId) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = labelEdition(editId);
+        btn.className = editId === state.editId ? 'active' : '';
+        btn.disabled = !available(state.caseId, state.viewId, editId);
+        btn.title = btn.disabled ? `No ${editId} result for ${state.viewId}` : '';
+        btn.addEventListener('click', () => {
+          state.editId = editId;
+          render();
+        });
+        editionTabs.appendChild(btn);
+      });
+    }
+
+    function renderViews() {
+      viewSwitch.innerHTML = '';
+      sortedViews(state.caseId).forEach((viewId) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = viewId;
+        btn.className = viewId === state.viewId ? 'active' : '';
+        btn.addEventListener('click', () => {
+          state.viewId = viewId;
+          normalizeSelection();
+          render();
+        });
+        viewSwitch.appendChild(btn);
+      });
+    }
+
+    function renderViewer() {
+      const panorama = imagePath(state.caseId, state.viewId, state.editId);
+      panoViewer.innerHTML = '';
+      if (!window.pannellum) {
+        panoViewer.innerHTML = `<img class="fallback" src="${panorama}" alt="${state.caseId} ${state.viewId} ${state.editId}" />`;
+        return;
+      }
+      pano = pannellum.viewer('panoViewer', {
+        type: 'equirectangular',
+        panorama,
+        autoLoad: true,
+        showControls: true,
+        showFullscreenCtrl: true,
+        compass: false,
+        hfov: 95,
+        pitch: 0,
+        yaw: 0,
+      });
+    }
+
+    function render() {
+      normalizeSelection();
+      caseTitle.textContent = isInput() ? 'INPUT' : `${state.caseId.replace('case', 'Case ')} Results`;
+      selectionLabel.textContent = `${state.caseId.replace('case', 'Case ')} - ${labelEdition(state.editId)} - ${state.viewId}`;
+      inputBadge.textContent = isInput() ? 'input: V0/e0' : 'generated result';
+      inputBadge.className = isInput() ? 'badge input' : 'badge';
+      renderCases();
+      renderEditions();
+      renderViews();
+      renderViewer();
+    }
+
+    setupVideo();
+    render();
+  </script>
 </body>
 </html>
