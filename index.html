@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>一种基于单张全景图的可编辑自由视点全景生成系统 Supplementary Demo</title>
+  <title>Supplementary Demo</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
   <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
   <style>
@@ -53,10 +53,10 @@
     .viewer-panel { grid-column: 2; grid-row: 1 / span 2; }
     .panel-head { padding: 9px 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .panel-head h2 { margin: 0; font-size: 13px; }
-    .control-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: #fbfcff; }
-    .control-group { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .control-bar { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: #fbfcff; }
+    .control-group { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; }
     .control-label { color: var(--muted); font-size: 12px; font-weight: 750; white-space: nowrap; }
-    .case-list, .edition-list, .view-switch { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    .case-list, .edition-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
     button {
       border: 1px solid var(--line);
       background: var(--panel);
@@ -141,7 +141,7 @@
     <div class="topbar">
       <div>
         <h1>Supplementary Demo</h1>
-        <div class="subtitle">Supplementary visual materials . Select a case, edition, and viewpoint to inspect the embedded results.</div>
+        <div class="subtitle">Supplementary visual materials.</div>
       </div>
     </div>
   </header>
@@ -170,20 +170,16 @@
 
       <section class="viewer-panel">
         <div class="panel-head">
-          <h2 id="caseTitle">Case</h2>
+          <h2 id="caseTitle">Results</h2>
         </div>
         <div class="control-bar" aria-label="Result selectors">
           <div class="control-group">
-            <span class="control-label">Cases</span>
-            <div id="caseList" class="case-list" aria-label="Case selector"></div>
+            <span class="control-label">input</span>
+            <div id="caseList" class="case-list" aria-label="Input selector"></div>
           </div>
           <div class="control-group">
-            <span class="control-label">Viewpoints</span>
-            <div id="viewSwitch" class="view-switch" aria-label="Viewpoint selector"></div>
-          </div>
-          <div class="control-group">
-            <span class="control-label">Editions</span>
-            <div id="editionTabs" class="edition-list" aria-label="Edition selector"></div>
+            <span class="control-label">output</span>
+            <div id="editionTabs" class="edition-list" aria-label="Result selector"></div>
           </div>
         </div>
         <div class="viewer-wrap">
@@ -253,7 +249,6 @@
 
     const caseList = document.getElementById('caseList');
     const editionTabs = document.getElementById('editionTabs');
-    const viewSwitch = document.getElementById('viewSwitch');
     const caseTitle = document.getElementById('caseTitle');
     const selectionLabel = document.getElementById('selectionLabel');
     const inputBadge = document.getElementById('inputBadge');
@@ -294,14 +289,8 @@
       return Object.keys(DATA).sort((a, b) => Number(a.replace('case', '')) - Number(b.replace('case', '')));
     }
 
-    function sortedEdits(caseId) {
-      const edits = new Set();
-      Object.values(DATA[caseId]).forEach((items) => items.forEach((edit) => edits.add(edit)));
-      return [...edits].sort((a, b) => Number(a.replace('e', '')) - Number(b.replace('e', '')));
-    }
-
-    function sortedViews(caseId) {
-      return Object.keys(DATA[caseId]).sort();
+    function labelInput(caseId) {
+      return `input${Number(caseId.replace('case', '')) + 1}`;
     }
 
     function imagePath(caseId, viewId, editId) {
@@ -313,20 +302,35 @@
       return Boolean(DATA[caseId] && DATA[caseId][viewId] && DATA[caseId][viewId].includes(editId));
     }
 
+    function sortedResultOptions(caseId) {
+      const options = [];
+      Object.entries(DATA[caseId]).forEach(([viewId, edits]) => {
+        edits.forEach((editId) => {
+          if (viewId === 'V0' && editId === 'e0') return;
+          options.push({ viewId, editId });
+        });
+      });
+      return options.sort((a, b) => {
+        const editDiff = Number(a.editId.replace('e', '')) - Number(b.editId.replace('e', ''));
+        if (editDiff !== 0) return editDiff;
+        return Number(a.viewId.replace('V', '')) - Number(b.viewId.replace('V', ''));
+      });
+    }
+
     function normalizeSelection() {
-      const views = sortedViews(state.caseId);
-      if (!views.includes(state.viewId)) state.viewId = views[0];
-      const edits = sortedEdits(state.caseId);
-      if (!edits.includes(state.editId)) state.editId = edits[0];
       if (!available(state.caseId, state.viewId, state.editId)) {
-        const fallback = DATA[state.caseId][state.viewId]?.[0] || edits[0];
-        state.editId = fallback;
+        const fallback = sortedResultOptions(state.caseId)[0];
+        state.viewId = fallback.viewId;
+        state.editId = fallback.editId;
       }
     }
 
-    function labelEdition(editId) {
+    function labelResult(viewId, editId) {
       const n = Number(editId.replace('e', ''));
-      return Number.isFinite(n) ? `Edition ${n}` : editId;
+      const v = viewId.toLowerCase();
+      if (n === 0 && viewId === 'V0') return 'input';
+      if (n === 0) return `unedited-${v}`;
+      return `edition${n}-${v}`;
     }
 
     function isInput() {
@@ -338,7 +342,7 @@
       sortedCases().forEach((caseId) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.textContent = caseId.replace('case', 'Case ');
+        btn.textContent = labelInput(caseId);
         btn.className = caseId === state.caseId ? 'active' : '';
         btn.addEventListener('click', () => {
           state.caseId = caseId;
@@ -352,34 +356,17 @@
 
     function renderEditions() {
       editionTabs.innerHTML = '';
-      sortedEdits(state.caseId).forEach((editId) => {
+      sortedResultOptions(state.caseId).forEach(({ viewId, editId }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.textContent = labelEdition(editId);
-        btn.className = editId === state.editId ? 'active' : '';
-        btn.disabled = !available(state.caseId, state.viewId, editId);
-        btn.title = btn.disabled ? `No ${editId} result for ${state.viewId}` : '';
+        btn.textContent = labelResult(viewId, editId);
+        btn.className = viewId === state.viewId && editId === state.editId ? 'active' : '';
         btn.addEventListener('click', () => {
+          state.viewId = viewId;
           state.editId = editId;
           render();
         });
         editionTabs.appendChild(btn);
-      });
-    }
-
-    function renderViews() {
-      viewSwitch.innerHTML = '';
-      sortedViews(state.caseId).forEach((viewId) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = viewId;
-        btn.className = viewId === state.viewId ? 'active' : '';
-        btn.addEventListener('click', () => {
-          state.viewId = viewId;
-          normalizeSelection();
-          render();
-        });
-        viewSwitch.appendChild(btn);
       });
     }
 
@@ -405,13 +392,12 @@
 
     function render() {
       normalizeSelection();
-      caseTitle.textContent = isInput() ? 'INPUT' : `${state.caseId.replace('case', 'Case ')} Results`;
-      selectionLabel.textContent = `${state.caseId.replace('case', 'Case ')} - ${labelEdition(state.editId)} - ${state.viewId}`;
-      inputBadge.textContent = isInput() ? 'input: V0/e0' : 'generated result';
+      caseTitle.textContent = `${labelInput(state.caseId)} Results`;
+      selectionLabel.textContent = `${labelInput(state.caseId)} - ${labelResult(state.viewId, state.editId)}`;
+      inputBadge.textContent = isInput() ? 'input' : 'result';
       inputBadge.className = isInput() ? 'badge input' : 'badge';
       renderCases();
       renderEditions();
-      renderViews();
       renderViewer();
     }
 
